@@ -1,35 +1,49 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 uint32_t PC = 0;
 uint32_t I = 0;
-u_int8_t VX[16];
-u_int8_t *code;
-u_int32_t stack[16];
-u_int16_t sh = 0;
+uint8_t VX[16];
+uint8_t *code;
+uint32_t stack[16];
+uint16_t sh = 0;
+uint8_t memory[4096];
 
-void push_to_stack(u_int16_t X) {
-    stack[sh] = (u_int32_t) X;
+
+uint8_t screen[64 * 32];
+
+void flip_screen(uint8_t x, uint8_t y) {
+    if (x>0 && x<64 && y>0 && y<32 ) {
+        screen[x + y*64] = 1 - screen[x + y*64];
+    }
+}
+void push_to_stack(uint16_t X) {
+    stack[sh] = (uint32_t) X;
     sh +=1;
 }
-u_int16_t pop_from_stack() {
-    u_int16_t X = (u_int16_t) stack[sh];
+uint16_t pop_from_stack() {
+    uint16_t X = (uint16_t) stack[sh];
     sh += -1;
     return X;
 }
 
 
-u_int16_t fetch_instruction(uint32_t PC, u_int8_t * code) {
-    u_int16_t n1 = (u_int16_t) code[PC];
-    u_int16_t n2 = (u_int16_t) code[PC + 1];
-    u_int16_t op = n1 << 8 | n2;
+uint16_t fetch_current_instruction() {
+    uint16_t n1 = (uint16_t) code[PC];
+    uint16_t n2 = (uint16_t) code[PC + 1];
+    uint16_t op = n1 << 8 | n2;
     return op;
 }
-u_int8_t get_opcode(u_int16_t op) {
-    return (u_int8_t) ((op & 0xf000) >> 12);
+uint8_t get_opcode(uint16_t op) {
+    return (uint8_t) ((op & 0xf000) >> 12);
 }
 
 void clear_screen() {
+    for (int i = 0; i < 64 * 32; i++) {
+        screen[i] = 0;
+    }
     printf("Clearing screen.\n");
 }
 
@@ -38,137 +52,153 @@ void go_back() {
     PC = pop_from_stack();
     printf("Going back.\n");
 }
-void call(u_int16_t op) {
+void call(uint16_t op) {
     printf("call %x\n", op);
 }
 
-void goto_nnn(u_int16_t NNN) {
-    PC = NNN;
+void goto_nnn(uint16_t NNN) {
+    PC = NNN - 0x200;
     printf("goto_nnn %x\n", NNN);
 }
-void gosubroutine(u_int16_t NNN) {
+void gosubroutine(uint16_t NNN) {
     push_to_stack(PC);
-    PC = NNN;
+    PC = NNN - 0x200;
     printf("gotosub at %x\n", NNN);
 }
-void jmp_equ(u_int8_t X, u_int16_t NN) {
+void jmp_equ(uint8_t X, uint16_t NN) {
     printf("jmp_equ if V%x == %x\n",X, NN);
 }
-void jmp_nequ(u_int8_t X, u_int16_t NN) {
+void jmp_nequ(uint8_t X, uint16_t NN) {
     printf("jmp_equ if V%x != %x\n",X, NN);
 }
-void jmp_equ_register(u_int8_t X, u_int8_t Y) {
+void jmp_equ_register(uint8_t X, uint8_t Y) {
     printf("jmp_equ if V%x == V%x\n",X, Y);
 }
-void jmp_nequ_register(u_int8_t X, u_int8_t Y) {
+void jmp_nequ_register(uint8_t X, uint8_t Y) {
     printf("jmp_equ if V%x != V%x\n",X, Y);
 }
-void jmp(u_int16_t NNN) {
+void jmp(uint16_t NNN) {
     printf("jmp to V0 + %x",NNN);
 }
-void move(u_int8_t X, u_int16_t NN) {
+void move(uint8_t X, uint16_t NN) {
     VX[X] = NN;
     printf("move  %x to V%x\n",NN, X);
 }
-void add(u_int8_t X, u_int16_t NN) {
+void add(uint8_t X, uint16_t NN) {
     VX[X] += NN;
     printf("add  %x to V%x\n",NN, X);
 }
-void assign(u_int8_t X, u_int8_t Y) {
+void assign(uint8_t X, uint8_t Y) {
     VX[X] = VX[Y];
     printf("V%x = V%x\n",X, Y);
 }
-void assign_or(u_int8_t X, u_int8_t Y) {
+void assign_or(uint8_t X, uint8_t Y) {
     VX[X] |= VX[Y];
     printf("V%x |= V%x\n",X, Y);
 }
-void assign_and(u_int8_t X, u_int8_t Y) {
+void assign_and(uint8_t X, uint8_t Y) {
     VX[X] &= VX[Y];
     printf("V%x &= V%x\n",X, Y);
 }
-void assign_xor(u_int8_t X, u_int8_t Y) {
+void assign_xor(uint8_t X, uint8_t Y) {
     VX[X] ^= VX[Y];
     printf("V%x ^= V%x\n",X, Y);
 }
-void register_add(u_int8_t X, u_int8_t Y) {
+void register_add(uint8_t X, uint8_t Y) {
     VX[X] += VX[Y];
     printf("V%x += V%x\n",X, Y);
 }
-void register_sub(u_int8_t X, u_int8_t Y) {
+void register_sub(uint8_t X, uint8_t Y) {
     VX[X] -= VX[Y];
     printf("V%x -= V%x\n",X, Y);
 }
-void register_shiftr(u_int8_t X) {
+void register_shiftr(uint8_t X) {
     VX[X] >>= 1 ;
     printf("V%x >> 1 store V%x & 0xf to VF\n",X, X);
 }
-void register_shiftl(u_int8_t X) {
+void register_shiftl(uint8_t X) {
     VX[X] <<= 1 ;
     printf("V%x << 1 store VF to 1 overflmw\n",X);
 }
-void register_rsub(u_int8_t X, u_int8_t Y) {
+void register_rsub(uint8_t X, uint8_t Y) {
     VX[X]  = VX[Y] - VX[X];
     printf("V%x = V%x - V%x\n",X, Y, X);
 }
-void set_address(u_int16_t NNN) {
-    I += NNN;
+void set_address(uint16_t NNN) {
+    I = NNN - 0x200;
     printf("set_address %x\n", NNN);
 }
-void set_rand(u_int8_t X, u_int16_t NNN) {
+void set_rand(uint8_t X, uint16_t NNN) {
     VX[X] = rand() & NNN;
     printf("set_rand to V%x\n = rand() & %x", X, NNN);
 }
 
-void display(u_int8_t X, u_int8_t Y, u_int8_t N) {
+void display(uint8_t X, uint8_t Y, uint8_t N) {
+    uint8_t x = VX[X] & 63;
+    uint8_t y = VX[Y] & 31;
+    for (uint8_t i = 0; i < N; i++) {
+        uint8_t v = memory[I + i];
+        uint8_t ay = y + i;
+        for (uint8_t j = 0; j < 8; j++) {
+            uint8_t ax = x + j;
+            uint8_t flag = 1 << j;
+            if ((v & flag) == flag) {
+                printf("screen %x %x\n", ax, ay);
+                flip_screen(ax, ay);
+            }
+        }
+
+    }
+
     printf("display sprite à (V%x, V%x) with height of %x - sprite at I\n", X,Y, N);
 }
 
-void key_pressed(u_int8_t X) {
+void key_pressed(uint8_t X) {
     printf("key pressed at V%x\n",X);
 }
-void key_release(u_int8_t X) {
+void key_release(uint8_t X) {
     printf("key release at V%x\n",X);
 }
 
-void set_delay(u_int8_t X) {
+void set_delay(uint8_t X) {
     printf("set timer to V%x\n", X);
 }
 
-void get_key(u_int8_t X) {
+void get_key(uint8_t X) {
     printf("get key store at V%x\n", X);
 }
-void set_timer(u_int8_t X) {
+void set_timer(uint8_t X) {
     printf("set timer at V%x\n", X);
 }
-void sound_timer(u_int8_t X) {
+void sound_timer(uint8_t X) {
     printf("sound timer at V%x\n", X);
 }
-void add_addr(u_int8_t X) {
+void add_addr(uint8_t X) {
     I += VX[X];
     printf("I += V%x\n", X);
 }
-void set_sprite_addr(u_int8_t X) {
+void set_sprite_addr(uint8_t X) {
     printf("set sprite addr at V%x\n", X);
 }
 
-void set_bcd(u_int8_t X) {
+void set_bcd(uint8_t X) {
     printf("set bcd V%x\n", X);
 }
-void store_registers(u_int8_t X) {
+void store_registers(uint8_t X) {
     printf("store registers up to V%x at I\n", X);
 }
 
-void rec_registers(u_int8_t X) {
+void rec_registers(uint8_t X) {
     printf("rec registers up to V%x from I\n", X);
 }
 
-void decode_opcode(u_int16_t op) {
-    u_int8_t opcode = (u_int8_t) ((op & 0xf000) >> 12);
-    u_int8_t X = (u_int8_t) ((op & 0x0f00) >> 8);
-    u_int8_t Y = (u_int8_t) ((op & 0x00f0)>>4);
-    u_int8_t N = (u_int8_t) ((op & 0x000f));
-    u_int8_t NN = (u_int8_t) ((op & 0x00ff));
-    u_int16_t NNN = (u_int16_t) (op & 0x0fff);
+void decode_opcode(uint16_t op) {
+    uint8_t opcode = (uint8_t) ((op & 0xf000) >> 12);
+    uint8_t X = (uint8_t) ((op & 0x0f00) >> 8);
+    uint8_t Y = (uint8_t) ((op & 0x00f0)>>4);
+    uint8_t N = (uint8_t) ((op & 0x000f));
+    uint8_t NN = (uint8_t) ((op & 0x00ff));
+    uint16_t NNN = (uint16_t) (op & 0x0fff);
     printf("%x %x %x %x %x %x %x\n",op, opcode,X,Y,N,NN,NNN);
     switch(opcode) {
         case 0 : {
@@ -212,7 +242,7 @@ void decode_opcode(u_int16_t op) {
         }
         break;
         case 8 : {
-            u_int8_t last_n = (u_int8_t) (op & 0x000f);
+            uint8_t last_n = (uint8_t) (op & 0x000f);
             switch(last_n) {
                 case 0 : {
                     assign(X,Y);
@@ -278,7 +308,7 @@ void decode_opcode(u_int16_t op) {
         }
         break;
         case 0xe : {
-            u_int8_t last_n = (u_int8_t) (op & 0x00ff);
+            uint8_t last_n = (uint8_t) (op & 0x00ff);
             if (last_n == 0x9e) {
                 key_pressed(X);
             }
@@ -291,7 +321,7 @@ void decode_opcode(u_int16_t op) {
         }
         break;
         case 0xf : {
-            u_int8_t last_n = (u_int8_t) (op & 0x00ff);
+            uint8_t last_n = (uint8_t) (op & 0x00ff);
             switch (last_n) {
                 case 0x07: {
                     set_delay(X);
@@ -351,10 +381,10 @@ long load_file_and_code(char * filename) {
     long size = ftell(f);
     printf("File size is %ld bytes.\n", size);
     // reserve memory for whole file
-    code = (u_int8_t *) malloc(sizeof(u_int8_t) * size);
+    code = (uint8_t *) malloc(sizeof(uint8_t) * size);
     rewind(f);
     // and store in v
-    fread(code, sizeof(u_int8_t), size, f);
+    fread(code, sizeof(uint8_t), size, f);
     printf("Read %ld bytes.\n", size);
     fclose(f);
     return size;
@@ -366,13 +396,36 @@ int main(void) {
 
     // open load code  file
     long size = load_file_and_code("../IBM Logo.ch8");
-
+    memcpy(memory, code, size);
     // do the code
+    int cpt = 0;
     while (1) {
-        u_int16_t op = fetch_instruction(PC, code);
+        uint16_t op = fetch_current_instruction();
         PC += 2;
         decode_opcode(op);
         printf("state PC I stack V0 V1 \n %x %x %d %x %x\n",PC, I, sh, VX[0], VX[1]);
+        cpt ++;
+        if (cpt > 100) {
+            FILE * f = fopen("../img.txt", "w");
+
+            for (int j = 0; j < 32; j++) {
+                for (int i = 0; i < 64; i++) {
+                if (screen[i + 64 *j ] == 1) {
+                        fputc('*', f);
+                        printf("*");
+                    }
+                    else {
+                        fputc(' ', f);
+                        printf(" ");
+                    }
+                }
+                fputc('\n', f);
+                printf("\n");
+            }
+            fclose(f);
+            break;
+        }
+
     }
 
 
