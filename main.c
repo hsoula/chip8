@@ -140,7 +140,7 @@ void display(uint8_t X, uint8_t Y, uint8_t N) {
         uint8_t v = memory[I + i];
         uint8_t ay = y + i;
         for (uint8_t j = 0; j < 8; j++) {
-            uint8_t ax = x + j;
+            uint8_t ax = x + 7 - j;
             uint8_t flag = 1 << j;
             if ((v & flag) == flag) {
                 printf("screen %x %x\n", ax, ay);
