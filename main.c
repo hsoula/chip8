@@ -11,7 +11,24 @@ uint32_t stack[16];
 uint16_t sh = 0;
 uint8_t memory[4096];
 
-
+uint8_t fontSet[] = {
+                0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+                0x20, 0x60, 0x20, 0x20, 0x70, // 1
+                0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+                0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+                0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+                0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+                0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+                0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+                0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+                0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+                0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+                0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+                0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+                0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+                0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+                0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    };
 uint8_t screen[64 * 32];
 
 void flip_screen(uint8_t x, uint8_t y) {
@@ -66,18 +83,32 @@ void gosubroutine(uint16_t NNN) {
     printf("gotosub at %x\n", NNN);
 }
 void jmp_equ(uint8_t X, uint16_t NN) {
+    if (VX[X] == NN) {
+    PC += 2;
+    }
     printf("jmp_equ if V%x == %x\n",X, NN);
 }
 void jmp_nequ(uint8_t X, uint16_t NN) {
+    if (VX[X] != NN) {
+        PC += 2;
+    }
     printf("jmp_equ if V%x != %x\n",X, NN);
 }
 void jmp_equ_register(uint8_t X, uint8_t Y) {
+    if (VX[X] == VX[Y]) {
+        PC += 2;
+    }
     printf("jmp_equ if V%x == V%x\n",X, Y);
 }
 void jmp_nequ_register(uint8_t X, uint8_t Y) {
+    if (VX[X] != VX[Y]) {
+        PC += 2;
+    }
     printf("jmp_equ if V%x != V%x\n",X, Y);
 }
 void jmp(uint16_t NNN) {
+    PC = VX[0] + NNN;
+
     printf("jmp to V0 + %x",NNN);
 }
 void move(uint8_t X, uint16_t NN) {
@@ -143,7 +174,7 @@ void display(uint8_t X, uint8_t Y, uint8_t N) {
             uint8_t ax = x + 7 - j;
             uint8_t flag = 1 << j;
             if ((v & flag) == flag) {
-                printf("screen %x %x\n", ax, ay);
+               // printf("screen %x %x\n", ax, ay);
                 flip_screen(ax, ay);
             }
         }
@@ -395,7 +426,7 @@ int main(void) {
 
 
     // open load code  file
-    long size = load_file_and_code("../IBM Logo.ch8");
+    long size = load_file_and_code("../Particle Demo.ch8");
     memcpy(memory, code, size);
     // do the code
     int cpt = 0;
@@ -405,7 +436,7 @@ int main(void) {
         decode_opcode(op);
         printf("state PC I stack V0 V1 \n %x %x %d %x %x\n",PC, I, sh, VX[0], VX[1]);
         cpt ++;
-        if (cpt > 100) {
+        if (cpt > 10000) {
             FILE * f = fopen("../img.txt", "w");
 
             for (int j = 0; j < 32; j++) {
