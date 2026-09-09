@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ncurses.h>
+
+
 
 uint32_t PC = 0;
 uint32_t I = 0;
@@ -111,7 +114,7 @@ void jmp(uint16_t NNN) {
 
     printf("jmp to V0 + %x",NNN);
 }
-void move(uint8_t X, uint16_t NN) {
+void reg_move(uint8_t X, uint16_t NN) {
     VX[X] = NN;
     printf("move  %x to V%x\n",NN, X);
 }
@@ -277,7 +280,7 @@ void decode_opcode(uint16_t op) {
         }
         break;
         case 0x6 : {
-            move(X, NN);
+            reg_move(X, NN);
         }
         break;
         case 0x7 :  {
