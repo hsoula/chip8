@@ -213,13 +213,25 @@ void set_sprite_addr(uint8_t X) {
 }
 
 void set_bcd(uint8_t X) {
+    uint8_t x100 = X / 100;
+    uint8_t x10 = (X  - x100 * 100) / 10;
+    uint8_t x1 = X  - x100 * 100 - x10 *  10;
+    memory[I] = x100;
+    memory[I + 1] = x10;
+    memory[I + 2] = x1;
     printf("set bcd V%x\n", X);
 }
 void store_registers(uint8_t X) {
+    for (uint8_t i = 0; i < X; i++) {
+        memory[I + i] = VX[i];
+    }
     printf("store registers up to V%x at I\n", X);
 }
 
 void rec_registers(uint8_t X) {
+    for (uint8_t i = 0; i < X; i++) {
+        VX[i] = memory[I + i];
+    }
     printf("rec registers up to V%x from I\n", X);
 }
 
