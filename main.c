@@ -474,6 +474,24 @@ int main(void) {
 
     }
 
+    int row,col;				/* to store the number of rows and *
+                        * the number of colums of the screen */
+    initscr();				/* start the curses mode */
+    getmaxyx(stdscr,row,col);		/* get the number of rows and columns */
+    for (int j = 0; j < 32; j++) {
+        for (int i = 0; i < 64; i++) {
+            if (screen[i + 64 *j ] == 1) {
+                mvprintw(j,i,"%c",'*');
+            }
+        }
+    }
+    /* print the message at the center of the screen */
+    mvprintw(row-2,0,"This screen has %d rows and %d columns\n",row,col);
+    printw("Try resizing your window(if possible) and then run this program again");
+    refresh();
+    getch();
+    endwin();
+
 
     free(code);
     return 0;
