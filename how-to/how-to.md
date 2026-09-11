@@ -89,7 +89,7 @@ le mieux est de faire un switch et une fonction qui décrit ce qui est fait mais
 ## Registres, lecture du flow et décodage
 Les machines ont 16 registres appelées VX avec X dans [0x0, 0xF]. Il y a un pointeur 'PC' qui indique l'endroit du code 
 en exécution. Si on a chargé le code sous forme d'octet l'instruction doit augmenter de 2 pour passer à l'opcode suivant. 
-* code[0] et code[1] contiennenent les deux octets de la première instruction. 
+* code[0] et code[1] contiennent les deux octets de la première instruction. 
 
 Pour passer de deux octets (uint_8) à 16 bits il faut forcer le type et décaler. Du coup pour lire l'instruction à l'adresse i :
 ```C
@@ -105,4 +105,78 @@ Du coup on peut faire un code simple qui :
 * commencer par lire le logo IBM pour voir ce que ça donne.
 
 
+
+## Pointeur de mémoire et d'instructinn
+
+### Pointeur de mémoire
+Il faut créer un pointeur de mémoire I qui pointe sur un bout de la mémoire. 
+Le plus simple est de créer un bloc de 4096 octets et l'appeler memory. Ensuite on peut copier le code à l'adresse 0x200
+qui sera la référence. L'instruction 0xANNN va justement copier l'adresse NNN dans I. 
+Il s'agit souvent d'un data block - dans le cas de IBM c'est les données pour dessiner le logo. 
+### Pointeur d'instruction 
+Le pointeur d'instruction commence à 0x200 si le code est copié à cette adresse sinon 0x0. 
+Il s'incrémente de 2 car on lit 2 octets : 
+````C
+uint_16 opcode = ((uint_16) code[PC] << 8) | (uint_16) code[PC+1]; 
+PC += 2; // next instruction
+````
+### Pointeur de pile 
+Le pointeur de pile SP (stack pointeur). On peut faire une pile soit même qui n'a pas pas besoin de résider dans la mémoire totale. 
+Genre :
+````C
+uint_8 stack[256]; // stacke de 256 octets max
+uint_8 SP = 0; // pointeur actuel 
+````
+on peut faire des fonctions pour ajouter un élément de la pile et enlever un élement de la pile 
+
+````C
+void push_to_stack(uint_8 X) {
+    stack[sh] = (uint_8) X;
+    SP +=1;
+}
+uint_8 pop_from_stack() {
+    uint_8 X = (uint_8) stack[sh];
+    SP += -1;
+    return X;
+}
+````
+En supposant que le pointeur SP soit une variable globale
+
+
+## Display : ecrire à l'écran 
+Il y a un seul opcode pour le dessin : 0xDXYN 
+Ici ça veut dire dessiner aux coordonnées VX et VY le N octets de  la memoire à I
+donc :
+````C
+for (int i = 0; i < N) {
+    uint_8 sprite = memory[I + i]};
+    // plot the sprite sprite 
+    // at posituion Y = VY + i 
+````
+Un sprite ici est une un octet qui s'écrit en binaire : 0bxxxxxxxx
+donc avec 8 bits. Chaque bit va donner une coordonnée X à partir de 0 jusqu'à 8 exclut 
+
+
+````C
+for (int i = 0; i < N) {
+    uint_8 sprite = memory[I + i]};
+    // plot the sprite sprite 
+    // at posituion Y = VY + i 
+    uint_8 ay == vY + i;
+    for (int j = 0; j< 8; j++) {
+        // si le jieme bit de sprite est 1 flip le pixel
+        uint_8 ax = VX + j 
+        flip_screen(ax, ay);
+        }
+````
+
+Il faut vérifier si le jième bit is on :
+````C
+bool is_bit_on(u_int8 x, u_int8 bit) {
+        u_int8 flag = 1 << bit; 
+        return (x & flag) == flag; // the bit is on 
+    }
+````
+
+Pour commencer le plus simple est de dessiner dans un tableau de 64 par 32 et de l'imprimer à l'écran une fois le code fini. 
 

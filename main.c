@@ -441,7 +441,7 @@ int main(void) {
 
 
     // open load code  file
-    long size = load_file_and_code("../Particle Demo.ch8");
+    long size = load_file_and_code("../IBM Logo.ch8");
     memcpy(memory, code, size);
     // do the code
     int cpt = 0;
