@@ -1,7 +1,7 @@
 # CHIP8 Démarrage
 
 
-## Importer le code binaire (ROM)
+## 1 Importer le code binaire (ROM)
 
 Le code est entièrement chargé en mémoire d'un coup. 
 La technique est de l'ouvrir en "rb". Le souci, c'est que la structure FILE * du C ne permet pas de connaitre la taille. 
@@ -24,7 +24,7 @@ fclose(f);
 Probablement le plus simple est de faire une fonction qui prend une string C comme nom de fichier et modifie des variables
 globales "code" et "size" - probablement donner des noms plus explicites. 
 
-## Lire les instructions 
+## 2 Lire les instructions 
 
 Les instructions sont des codes sur 2 (deux) octets. Il faut lire la ROM (code) par paire.
 En hexadécimal un octet occupe 2 digit (on dit aussi nibble) donc 2 octet c'est 4 digits. 
@@ -86,7 +86,7 @@ Il faut aussi faire gaffe aux parenthèses.
 La liste de toutes les instructions est la https://en.wikipedia.org/wiki/CHIP-8 
 le mieux est de faire un switch et une fonction qui décrit ce qui est fait mais ne fait encore rien. 
 
-## Registres, lecture du flow et décodage
+## 3 Registres, lecture du flow et décodage
 Les machines ont 16 registres appelées VX avec X dans [0x0, 0xF]. Il y a un pointeur 'PC' qui indique l'endroit du code 
 en exécution. Si on a chargé le code sous forme d'octet l'instruction doit augmenter de 2 pour passer à l'opcode suivant. 
 * code[0] et code[1] contiennent les deux octets de la première instruction. 
@@ -106,7 +106,7 @@ Du coup on peut faire un code simple qui :
 
 
 
-## Pointeur de mémoire et d'instructinn
+## 4 Pointeur de mémoire et d'instructinn
 
 ### Pointeur de mémoire
 Il faut créer un pointeur de mémoire I qui pointe sur un bout de la mémoire. 
@@ -143,7 +143,7 @@ uint_8 pop_from_stack() {
 En supposant que le pointeur SP soit une variable globale
 
 
-## Display : ecrire à l'écran 
+## 5 Display : ecrire à l'écran 
 Il y a un seul opcode pour le dessin : 0xDXYN 
 Ici ça veut dire dessiner aux coordonnées VX et VY le N octets de  la memoire à I
 donc :
@@ -153,7 +153,7 @@ for (int i = 0; i < N) {
     // plot the sprite sprite 
     // at posituion Y = VY + i 
 ````
-Un sprite ici est une un octet qui s'écrit en binaire : 0bxxxxxxxx
+Un sprite ici est  un octet qui s'écrit en binaire : 0bxxxxxxxx
 donc avec 8 bits. Chaque bit va donner une coordonnée X à partir de 0 jusqu'à 8 exclut 
 
 
